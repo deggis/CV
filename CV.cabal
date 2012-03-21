@@ -18,6 +18,9 @@ Description:         This is a machine vision package that wraps some functional
                       <http://aleator.github.com/CV/>
                      .
                      Changelog.
+
+                     FIXME: add note on Haralick
+
                      0.3.5 - Many new wrappers, clean ups and other fixes.
                      .
                      0.3.4 - Pixelwise operations, bug fixes and additional documentation
