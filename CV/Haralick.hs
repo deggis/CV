@@ -7,11 +7,12 @@ import qualified Data.Map as M
 import Data.Array.Repa as R
 import Data.Array.Repa.Repr.Unboxed as R
 import Data.List as L
+import Debug.Trace
 
-type CoOccurrenceMatrix = R.Array U DIM2 Int
+type CoOccurrenceMatrix = R.Array U DIM2 Double
 
 rToC :: Int -> D8 -> Int
-rToC nColors r = round $ realToFrac r * (fromIntegral nColors - 1)
+rToC nColors r = round $ realToFrac r / (256 / fromIntegral nColors)
 
 -- | Probably painfully slow implementation of gray level co-occurrence matrix
 -- (GLCM) calculation to Repa DIM2 array.
@@ -23,7 +24,9 @@ coOccurrenceMatrix (dx,dy) nColors i =
         usableHeight = if dy > 0 then (h-dy) else h
         startX       = if dx < 0 then (-dx) else 0
         startY       = if dy < 0 then (-dy) else 0
-        getColor     = rToC nColors . (flip getPixel) i
+        getColor p   =
+            let x = rToC nColors . (flip getPixel) i $ p
+            in traceShow x x
         -- Force indices (row,col) to hit bottom triangle of the symmetric DIM2 matrix.
         swap' (r,c) = if r<c then (c,r) else (r,c)
         fuu (x,y)    = swap' $ (getColor (x,y), getColor(x+dx,y+dy))
@@ -34,7 +37,8 @@ coOccurrenceMatrix (dx,dy) nColors i =
         -- XXX: Neighbours sorted as list and packed to temporary Map.
         sums = M.fromList . Prelude.map (\x -> (head x, length x)) . group . sort $ neighbours
         shape = Z :. nColors :. nColors
+        comparisons = length neighbours
     in R.computeUnboxedP $ R.fromFunction shape $ \(Z:.r:.c) ->
                             case M.lookup (swap' (r,c)) sums of
-                                Just sum' -> sum'
+                                Just sum' -> fromIntegral sum' / comparisons
                                 _         -> 0
