@@ -99,6 +99,7 @@ Library
                        containers >= 0.2,
                        storable-complex,
                        binary >= 0.5,
+                       repa >= 3.0,
                        deepseq >= 1.1,
                        bindings-DSL >= 1.0.14 && < 1.1,
                        vector >= 0.7.0.1 && < 1.1,
@@ -142,6 +143,7 @@ Library
                        ,CV.Tracking                           
                        ,CV.Transforms                         
                        ,CV.Video                              
+                       ,CV.Haralick
                        ,Utils.DrawingClass                    
                        ,Utils.Function                        
                        ,Utils.GeometryClass                   
