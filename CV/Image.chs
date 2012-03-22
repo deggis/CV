@@ -572,6 +572,16 @@ instance  GetPixel (Image RGB D8) where
                                          b <- peek (castPtr (d`plusPtr` (y*cs +(x*3+2)*fs)))
                                          return (r,g,b)
 
+instance GetPixel (Image GrayScale D8) where
+    type P (Image GrayScale D8) = D8
+    {-#INLINE getPixel#-}
+    getPixel (x,y) i = unsafePerformIO $
+                        withGenImage i $ \c_i -> do
+                                         d <- {#get IplImage->imageData#} c_i
+                                         s <- {#get IplImage->widthStep#} c_i
+                                         peek (castPtr (d`plusPtr` (y*(fromIntegral s) +x*sizeOf (undefined :: D8))))
+
+
 
 convertTo :: CInt -> CInt -> BareImage -> BareImage
 convertTo code channels img = unsafePerformIO $ creatingBareImage $ do
