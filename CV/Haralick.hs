@@ -1,44 +1,30 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE RecordWildCards #-}
 module CV.Haralick where
 
 import CV.Image
+import CV.ColourUtils
+import CV.Pixelwise
+import qualified Data.Vector as V
 
-import qualified Data.Map as M
-import Data.Array.Repa as R
-import Data.Array.Repa.Repr.Unboxed as R
-import Data.List as L
-import Debug.Trace
+data GLCM = GLCM { hist :: V.Vector Double
+                 , nColors :: Int } deriving Show
 
-type CoOccurrenceMatrix = R.Array U DIM2 Double
+--FIX Getpixel olettaa 256 väriä ja käyttää suoraan indeksinä
 
-rToC :: Int -> D8 -> Int
-rToC nColors r = round $ realToFrac r / (256 / fromIntegral nColors)
+calcGLCM :: (Int,Int) -> Int -> Image GrayScale D8 -> GLCM
+calcGLCM (dx,dy) nColors x =
+    let get (i,j)  = fromIntegral $ getPixel (i,j) x
+        (w,h) = getSize x
 
--- | Probably painfully slow implementation of gray level co-occurrence matrix
--- (GLCM) calculation to Repa DIM2 array.
---
-coOccurrenceMatrix :: (Int,Int) -> Int -> Image GrayScale D8 -> CoOccurrenceMatrix
-coOccurrenceMatrix (dx,dy) nColors i =
-    let (w,h)  = getSize i
-        usableWidth  = if dx > 0 then (w-dx) else w
-        usableHeight = if dy > 0 then (h-dy) else h
-        startX       = if dx < 0 then (-dx) else 0
-        startY       = if dy < 0 then (-dy) else 0
-        getColor p   =
-            let x = rToC nColors . (flip getPixel) i $ p
-            in traceShow x x
-        -- Force indices (row,col) to hit bottom triangle of the symmetric DIM2 matrix.
-        swap' (r,c) = if r<c then (c,r) else (r,c)
-        fuu (x,y)    = swap' $ (getColor (x,y), getColor(x+dx,y+dy))
-        neighbours   = [ fuu (x,y)
-                            | x <- [startX..(usableWidth-1)]
-                            , y <- [startY..(usableHeight-1)] ]
-        sums :: M.Map (Int,Int) Int
-        -- XXX: Neighbours sorted as list and packed to temporary Map.
-        sums = M.fromList . Prelude.map (\x -> (head x, length x)) . group . sort $ neighbours
-        shape = Z :. nColors :. nColors
-        comparisons = length neighbours
-    in R.computeUnboxedP $ R.fromFunction shape $ \(Z:.r:.c) ->
-                            case M.lookup (swap' (r,c)) sums of
-                                Just sum' -> fromIntegral sum' / comparisons
-                                _         -> 0
+        hist = V.accum (+) (V.replicate (toIdx (nColors-1,nColors-1)) 0) $
+                [(toIdx (get (i,j), get (i+dx,j+dy)),1)
+                | i <- [0..w-1-dx]
+                , j <- [0..h-1-dy]]
+    in GLCM{..}
+
+toIdx (i,j) = (max i j*(max i j+1)) `div` 2 + min i j
+
+glcmToImage :: GLCM -> Image GrayScale D32
+glcmToImage g@GLCM{..} = logarithmicCompression $ imageFromFunction (a,a) (realToFrac . (V.!) hist . toIdx)
+  where
+    a = nColors - 1
