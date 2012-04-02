@@ -2327,7 +2327,7 @@ int wrapDrawChessBoardCorners(void* image, int pw, int ph, CvPoint2D32f* corners
 
 double wrapCalibrateCamera2(const CvMat* objectPoints, const CvMat* imagePoints, const CvMat* pointCounts, CvSize *imageSize, CvMat* cameraMatrix, CvMat* distCoeffs, CvMat* rvecs, CvMat* tvecs, int flags)
 {
-return cvCalibrateCamera2(objectPoints, imagePoints, pointCounts, *imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, flags);
+return cvCalibrateCamera2(objectPoints, imagePoints, pointCounts, *imageSize, cameraMatrix, distCoeffs, rvecs, tvecs, flags, cvTermCriteria(CV_TERMCRIT_ITER+CV_TERMCRIT_EPS,30,DBL_EPSILON));
 };
 
 void wrapFindCornerSubPix(const CvArr* image, CvPoint2D32f* corners, int count, int winW, int winH, int zeroW, int zeroH, int tType, int maxIter, double epsilon) {
